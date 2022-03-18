@@ -1,4 +1,4 @@
-name: 'Breaker Action'
+name: 'Breaker'
 description: 'Breaker detects breaking changes in ASP .NET Core APIs and generates IDE warnings for them.'
 branding:
   icon: activity
