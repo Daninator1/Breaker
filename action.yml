@@ -1,5 +1,5 @@
 name: 'Breaker Action'
-description: 'Checks an ASP .NET Core Web API for breaking changes and reports an error for each one found.'
+description: 'Breaker detects breaking changes in ASP .NET Core APIs and generates IDE warnings for them.'
 branding:
   icon: activity
   color: orange

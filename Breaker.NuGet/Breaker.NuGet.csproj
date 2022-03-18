@@ -9,24 +9,26 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <PackageId>Breaker</PackageId>
-        <!--    <PackageVersion>1.0.0.0</PackageVersion>-->
-        <PackageVersion>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmmss"))</PackageVersion>
+        <PackageId>Breaker.Analyzer</PackageId>
+        <PackageVersion>1.0.0.0</PackageVersion>
+        <!--<PackageVersion>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmmss"))</PackageVersion>-->
         <Authors>Daniel Zauner</Authors>
-        <PackageLicenseUrl>http://LICENSE_URL_HERE_OR_DELETE_THIS_LINE</PackageLicenseUrl>
-        <PackageProjectUrl>http://PROJECT_URL_HERE_OR_DELETE_THIS_LINE</PackageProjectUrl>
-        <PackageIconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</PackageIconUrl>
-        <RepositoryUrl>http://REPOSITORY_URL_HERE_OR_DELETE_THIS_LINE</RepositoryUrl>
-        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-        <Description>Description of Breaker</Description>
-        <PackageReleaseNotes>Summary of changes made in this release of the package.</PackageReleaseNotes>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <RepositoryUrl>https://github.com/Daninator1/Breaker</RepositoryUrl>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <Title>Breaker</Title>
+        <Description>Breaker detects breaking changes in ASP .NET Core APIs and generates IDE warnings for them.</Description>
+        <PackageReleaseNotes>Initial release.</PackageReleaseNotes>
         <Copyright>Copyright</Copyright>
         <PackageTags>Breaker, Analyzer, Breaking Change</PackageTags>
         <DevelopmentDependency>true</DevelopmentDependency>
         <NoPackageAnalysis>true</NoPackageAnalysis>
-
         <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddAnalyzersToOutput</TargetsForTfmSpecificContentInPackage>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\LICENSE" Pack="true" PackagePath=""/>
+    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Breaker.Logic\Breaker.Logic.csproj" />
