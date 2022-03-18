@@ -1,0 +1,22 @@
+name: 'Breaker Action'
+description: 'Checks an ASP .NET Core Web API for breaking changes and reports an error for each one found.'
+branding:
+  icon: activity
+  color: orange
+inputs:
+  actual:
+    description:
+      'Path to the actual solution.'
+    required: true
+  expected:
+    description:
+      'Path to the expected solution.'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - '-a'
+    - ${{ inputs.actual }}
+    - '-e'
+    - ${{ inputs.expected }}
