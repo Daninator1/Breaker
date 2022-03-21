@@ -44,8 +44,8 @@ public static class GitService
 
         var gitHeadText = File.ReadAllText(gitHeadInfo.FullName).Trim();
 
-        gitRef ??= gitHeadText.StartsWith("ref:")
-            ? gitHeadText.Split('/').Last()
+        gitRef ??= gitHeadText.StartsWith("ref: refs/heads/")
+            ? gitHeadText.Split("ref: refs/heads/").Last()
             : gitHeadText;
 
         if (Directory.Exists(clonedRepoPath))
