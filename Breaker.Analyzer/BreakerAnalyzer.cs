@@ -99,14 +99,34 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
                 CurrentClassesDictionary.Add(context.Compilation.AssemblyName, assemblyClasses);
             }
 
-            var currentClasses = CurrentClassesDictionary.Values
-                .SelectMany(x => x)
-                .MergePartialClasses()
-                .ToList();
+            var currentClasses = CurrentClassesDictionary.Values.SelectMany(x => x).ToList();
+
+            Logger.Log("------------");
+            
+            foreach (var currentClass in currentClasses)
+            {
+                Logger.Log(currentClass.Identifier.ValueText);
+            }
+            
+            Logger.Log("------------");
+
+            foreach (var expectedEndpoint in expectedEndpoints)
+            {
+                Logger.Log(expectedEndpoint.FullName);
+            }
+            
+            Logger.Log("------------");
 
             var currentEndpoints =
                 SourceCodeService.GetEndpointDetails(new Dictionary<string, IReadOnlyCollection<ClassDeclarationSyntax>>
                     { { context.Compilation.AssemblyName, currentClasses } });
+            
+            foreach (var currentEndpoint in currentEndpoints)
+            {
+                Logger.Log(currentEndpoint.FullName);
+            }
+            
+            Logger.Log("------------");
 
             var endpointChanges = Comparer.CompareEndpoints(currentEndpoints.ToList(),
                 expectedEndpoints.Where(e => CurrentClassesDictionary.ContainsKey(e.ProjectName)).ToList());
