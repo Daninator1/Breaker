@@ -23,7 +23,8 @@ public static class Extensions
     };
 
     private static string GetNamespace(this SyntaxNode node,
-        IReadOnlyCollection<ClassDeclarationSyntax> classDeclarations)
+        IReadOnlyCollection<ClassDeclarationSyntax> classDeclarations,
+        IReadOnlyCollection<UsingDirectiveSyntax> usingDirectives = null)
     {
         if (node is PredefinedTypeSyntax) return null;
         if (node is ClassDeclarationSyntax)
@@ -32,8 +33,8 @@ public static class Extensions
         if (node is QualifiedNameSyntax qn)
         {
             var namespacePrefix = qn.Left.ToString();
-            var aliasNamespace = node.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings
-                .SingleOrDefault(u => u.Alias?.Name.ToString() == namespacePrefix);
+            var usingsToSearch = usingDirectives ?? node.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings;
+            var aliasNamespace = usingsToSearch.SingleOrDefault(u => u.Alias?.Name.ToString() == namespacePrefix);
 
             return aliasNamespace is null ? namespacePrefix : aliasNamespace.Name.ToString();
         }
@@ -90,21 +91,25 @@ public static class Extensions
     }
 
     public static EndpointDetails ToEndpointDetails(this MethodDeclarationSyntax method,
+        ClassDeclarationSyntax controller,
         string projectName,
+        string baseVersion,
         AttributeArgumentSyntax baseRoute,
         AttributeSyntax baseAuthorization,
+        IReadOnlyCollection<UsingDirectiveSyntax> usings,
         IReadOnlyCollection<ClassDeclarationSyntax> classDeclarations)
     {
         var httpMethods = GetHttpMethods(method).ToList();
 
-        var controller = method.Ancestors().OfType<ClassDeclarationSyntax>().SingleOrDefault();
+        var @class = method.Ancestors().OfType<ClassDeclarationSyntax>().SingleOrDefault();
 
-        if (controller is null) return null;
-        
-        var version = controller.AttributeLists.SelectMany(al => al.Attributes)
-            .SingleOrDefault(a => a.Name.ToString() == "ApiVersion")?.ArgumentList?.Arguments.SingleOrDefault()?.Expression.GetFirstToken().ValueText;
+        if (@class is null) return null;
 
-        var httpMethodSpecificRoutes = GetHttpMethodSpecificRoutes(httpMethods, controller, method, version);
+        var specificVersion = method.AttributeLists.SelectMany(al => al.Attributes)
+            .SingleOrDefault(a => a.Name.ToString() == "ApiVersion")?.ArgumentList?.Arguments.SingleOrDefault()?.Expression.GetFirstToken()
+            .ValueText;
+
+        var httpMethodSpecificRoutes = GetHttpMethodSpecificRoutes(httpMethods, @class, method, specificVersion);
         var specificAuthorization = GetSpecificAuthorization(method);
 
         var successResponseTypes = GetSuccessResponseTypes(method).ToList();
@@ -113,16 +118,17 @@ public static class Extensions
         var result = new EndpointDetails
         {
             ProjectName = projectName,
-            Namespace = method.GetNamespace(classDeclarations),
+            Namespace = method.GetNamespace(classDeclarations, usings),
             Identifier = method.Identifier,
+            Class = @class,
             Controller = controller,
-            BaseRoute = new RouteDetails(baseRoute, controller?.Identifier.ValueText, method.Identifier.ValueText, version),
+            BaseRoute = new RouteDetails(baseRoute, controller?.Identifier.ValueText, method.Identifier.ValueText, baseVersion),
             HttpMethodSpecificRoutes = httpMethodSpecificRoutes,
             BaseAuthorization = baseAuthorization,
             SpecificAuthorization = specificAuthorization,
             ReturnTypes = returnTypes.Select(rt => rt is GenericNameSyntax x
-                ? x.GetTypeDetails(classDeclarations)
-                : rt.GetTypeDetails(classDeclarations)),
+                ? x.GetTypeDetails(classDeclarations, usings)
+                : rt.GetTypeDetails(classDeclarations, usings)),
             Attributes = method.AttributeLists.SelectMany(al => al.Attributes)
         };
 
@@ -154,11 +160,12 @@ public static class Extensions
             .Select(tuple => ((TypeOfExpressionSyntax)tuple.Item1).Type);
 
     private static TypeDetails GetTypeDetails(this SyntaxNode node,
-        IReadOnlyCollection<ClassDeclarationSyntax> classDeclarations)
+        IReadOnlyCollection<ClassDeclarationSyntax> classDeclarations,
+        IReadOnlyCollection<UsingDirectiveSyntax> usings = null)
     {
         var result = new TypeDetails
         {
-            Namespace = node.GetNamespace(classDeclarations),
+            Namespace = node.GetNamespace(classDeclarations, usings),
             Type = node switch
             {
                 GenericNameSyntax gn => gn.Identifier,
@@ -167,7 +174,7 @@ public static class Extensions
             },
             IsNullable = node is NullableTypeSyntax
         };
-        
+
         switch (node.Parent)
         {
             case PropertyDeclarationSyntax propertyParent:
@@ -179,7 +186,7 @@ public static class Extensions
                 result.Identifier = parameterParent.Identifier;
                 break;
         }
-        
+
         var identifierOverrideArgument = result.Attributes?
             .Where(a => a.Name.ToString().StartsWith("From") && a.ArgumentList is not null)
             .SelectMany(a => a.ArgumentList.Arguments)
@@ -235,14 +242,16 @@ public static class Extensions
         var routeAttribute = method.AttributeLists.SelectMany(al => al.Attributes)
             .SingleOrDefault(a => a.Name.ToString() == "Route")?.ArgumentList?.Arguments.FirstOrDefault();
 
-        if (!httpMethods.Any()) yield return (null, new RouteDetails(routeAttribute, controller.Identifier.ValueText, method.Identifier.ValueText, version));
+        if (!httpMethods.Any())
+            yield return (null, new RouteDetails(routeAttribute, controller.Identifier.ValueText, method.Identifier.ValueText, version));
 
         foreach (var httpMethod in httpMethods)
         {
             var specificRoute = httpMethod.ArgumentList?.Arguments.FirstOrDefault(a
                 => a.NameEquals is null || a.NameEquals.ToString() == "template") ?? routeAttribute;
 
-            yield return (httpMethod, new RouteDetails(specificRoute, controller.Identifier.ValueText, method.Identifier.ValueText, version));
+            yield return (httpMethod,
+                new RouteDetails(specificRoute, controller.Identifier.ValueText, method.Identifier.ValueText, version));
         }
     }
 

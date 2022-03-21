@@ -12,7 +12,7 @@ public static class SourceCodeService
         IDictionary<string, IReadOnlyCollection<ClassDeclarationSyntax>> classes)
     {
         var allClasses = classes.Values.SelectMany(x => x).ToList();
-        
+
         foreach (var (projectName, classDeclarations) in classes)
         {
             foreach (var classDeclaration in classDeclarations)
@@ -29,14 +29,39 @@ public static class SourceCodeService
 
                 var baseRoute = routeAttribute?.ArgumentList?.Arguments.Single();
 
+                var baseVersion = classDeclaration.AttributeLists.SelectMany(al => al.Attributes)
+                    .SingleOrDefault(a => a.Name.ToString() == "ApiVersion")?.ArgumentList?.Arguments.SingleOrDefault()?.Expression
+                    .GetFirstToken()
+                    .ValueText;
+
                 var authorizeAttribute = classAttributes.SingleOrDefault(a => a.Name.ToString() == "Authorize");
 
-                var publicMethods = classDeclaration.Members.OfType<MethodDeclarationSyntax>()
-                    .Where(m => m.Modifiers.Any(s => s.ValueText == "public"));
+                var partialClasses = classDeclarations
+                    .Where(c
+                    => c.Modifiers.Any(m => m.ValueText == "partial") && c.Identifier.ValueText == classDeclaration.Identifier.ValueText)
+                    .ToList();
+
+                var classDeclarationsToSearch = new List<ClassDeclarationSyntax> { classDeclaration };
+
+                if (partialClasses.Any())
+                {
+                    classDeclarationsToSearch = partialClasses;
+                }
+                
+                // node.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings
+
+                var usings = classDeclarationsToSearch
+                    .SelectMany(c => c.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings)
+                    .ToList();
+
+                var publicMethods = classDeclarationsToSearch
+                    .SelectMany(c => c.Members.OfType<MethodDeclarationSyntax>()
+                    .Where(m => m.Modifiers.Any(s => s.ValueText == "public")));
 
                 foreach (var publicMethod in publicMethods)
                 {
-                    yield return publicMethod.ToEndpointDetails(projectName, baseRoute, authorizeAttribute, allClasses);
+                    yield return publicMethod.ToEndpointDetails(classDeclaration, projectName, baseVersion, baseRoute, authorizeAttribute, usings,
+                        allClasses);
                 }
             }
         }
@@ -46,15 +71,15 @@ public static class SourceCodeService
         IReadOnlyCollection<ClassDeclarationSyntax> classDeclarations)
     {
         var baseClass = classDeclaration;
-        
+
         while (baseClass is not null)
         {
             var baseTypes = baseClass.BaseList?.Types;
-            
+
             if (baseTypes?.Any(b => b.Type.ToString() is "Controller" or "ControllerBase") ?? false) return true;
 
             var baseType = baseTypes?.SingleOrDefault(b => classDeclarations.Any(c => c.Identifier.Text == b.Type.ToString()));
-            
+
             baseClass = classDeclarations.FirstOrDefault(c => c.Identifier.Text == baseType?.Type.ToString());
         }
 
@@ -85,7 +110,8 @@ public static class SourceCodeService
             .Where(f => !Path.GetRelativePath(solutionDir.FullName, f.FullName).StartsWith(".breaker"));
         var xProjInfos = solutionDir
             .GetFiles("*.xproj", SearchOption.AllDirectories)
-            .Where(f => !Path.GetRelativePath(solutionDir.FullName, f.FullName).StartsWith(".breaker"));;
+            .Where(f => !Path.GetRelativePath(solutionDir.FullName, f.FullName).StartsWith(".breaker"));
+        ;
         var projectInfos = csProjInfos.Concat(xProjInfos).ToList();
         return projectInfos.ToDictionary(projectInfo => Path.GetFileNameWithoutExtension(projectInfo.FullName),
             projectInfo => projectInfo.Directory);

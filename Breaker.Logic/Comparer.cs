@@ -98,12 +98,12 @@ public static class Comparer
                 {
                     var location = actualEndpointsGroup?.Any() ?? false
                         ? actualEndpointsGroup.First().Identifier.GetLocation()
-                        : actualEndpointsGroups.First().First().Controller.Identifier
-                            .GetLocation(); //TODO: find better location to show removed controllers at (.csproj)
+                        : actualEndpointsGroups.First().First().Class.Identifier
+                            .GetLocation();
 
                     yield return (
                         location,
-                        $"{expectedEndpoint.Controller.Identifier.ValueText}: endpoint {expectedEndpoint.Identifier.ValueText} does no longer exist");
+                        $"{expectedEndpoint.Class.Identifier.ValueText}: endpoint {expectedEndpoint.Identifier.ValueText} does no longer exist");
                 }
                 else
                     foreach (var endpointChange in CompareEndpoints(actualEndpoint, expectedEndpoint))
