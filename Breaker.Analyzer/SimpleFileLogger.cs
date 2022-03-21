@@ -7,7 +7,12 @@ public class SimpleFileLogger
 {
     private readonly string filePath;
 
-    public SimpleFileLogger(string filePath) => this.filePath = filePath;
+    public SimpleFileLogger(string filePath)
+    {
+        this.filePath = filePath;
+        var directoryPath = Path.GetDirectoryName(this.filePath);
+        if (directoryPath is not null && !Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
+    }
 
     public void Log(string message)
     {
