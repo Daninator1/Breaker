@@ -36,7 +36,7 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
     private static readonly Dictionary<string, IEnumerable<ClassDeclarationSyntax>> CurrentClassesDictionary = new();
     private static bool getOrUpdateSolution = true;
     
-    private static SimpleFileLogger Logger;
+    private static SimpleFileLogger logger;
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
 
@@ -56,9 +56,7 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
             var solutionDirectoryInfo =
                 new DirectoryInfo(Path.GetDirectoryName(context.Options.GetSolutionPath()) ?? string.Empty);
 
-            Logger = new SimpleFileLogger(Path.Combine(solutionDirectoryInfo.FullName, ".breaker", "breaker.log"));
-            
-            Logger.Log($"Compilation: {context.Compilation.AssemblyName}");
+            logger = new SimpleFileLogger(Path.Combine(solutionDirectoryInfo.FullName, ".breaker", "breaker.log"));
 
             if (getOrUpdateSolution)
             {
@@ -76,7 +74,7 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
 
                 if (clonedRepoInfo is null)
                 {
-                    Logger.Log("Cloned repo was null, aborting.");
+                    logger.Log("Cloned repo was null, aborting.");
                     return;
                 }
 
@@ -101,32 +99,9 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
 
             var currentClasses = CurrentClassesDictionary.Values.SelectMany(x => x).ToList();
 
-            Logger.Log("------------");
-            
-            foreach (var currentClass in currentClasses)
-            {
-                Logger.Log(currentClass.Identifier.ValueText);
-            }
-            
-            Logger.Log("------------");
-
-            foreach (var expectedEndpoint in expectedEndpoints)
-            {
-                Logger.Log(expectedEndpoint.FullName);
-            }
-            
-            Logger.Log("------------");
-
             var currentEndpoints =
                 SourceCodeService.GetEndpointDetails(new Dictionary<string, IReadOnlyCollection<ClassDeclarationSyntax>>
                     { { context.Compilation.AssemblyName, currentClasses } });
-            
-            foreach (var currentEndpoint in currentEndpoints)
-            {
-                Logger.Log(currentEndpoint.FullName);
-            }
-            
-            Logger.Log("------------");
 
             var endpointChanges = Comparer.CompareEndpoints(currentEndpoints.ToList(),
                 expectedEndpoints.Where(e => CurrentClassesDictionary.ContainsKey(e.ProjectName)).ToList());
@@ -135,17 +110,12 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
             {
                 var diagnostic = Diagnostic.Create(Rule, location, message);
                 context.ReportDiagnostic(diagnostic);
-#if DEBUG
-                Logger.Log(message);
-#endif
             }
         }
         catch (Exception e)
         {
-#if DEBUG
-            Logger.Log(e.Message);
-            Logger.Log(e.StackTrace);
-#endif
+            logger.Log(e.Message);
+            logger.Log(e.StackTrace);
         }
     }
 }
