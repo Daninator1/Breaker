@@ -27,7 +27,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\LICENSE" Pack="true" PackagePath=""/>
+        <None Include="..\LICENSE" Pack="true" PackagePath="" />
     </ItemGroup>
 
     <ItemGroup>
@@ -38,7 +38,7 @@
     <ItemGroup>
         <None Update="tools\*.ps1" CopyToOutputDirectory="Always" Pack="true" PackagePath="" />
     </ItemGroup>
-    
+
     <Target Name="_AddAnalyzersToOutput">
         <ItemGroup>
             <TfmSpecificPackageFile Include="$(OutputPath)\Breaker.Analyzer.dll" PackagePath="analyzers/dotnet/cs" />

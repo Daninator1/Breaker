@@ -8,7 +8,7 @@ namespace Breaker.Logic;
 
 public static class Extensions
 {
-    private static readonly string[] SuccessStatusCodeEnums = new[]
+    private static readonly string[] SuccessStatusCodeEnums =
     {
         "HttpStatusCode.OK",
         "HttpStatusCode.Created",
@@ -81,13 +81,11 @@ public static class Extensions
 
             return possibleNamespace;
         }
-        else
-        {
-            var classDeclaration = possibleClasses.SingleOrDefault();
 
-            return classDeclaration?.Ancestors().OfType<BaseNamespaceDeclarationSyntax>().SingleOrDefault()?.Name
-                .ToString();
-        }
+        var classDeclaration = possibleClasses.SingleOrDefault();
+
+        return classDeclaration?.Ancestors().OfType<BaseNamespaceDeclarationSyntax>().SingleOrDefault()?.Name
+            .ToString();
     }
 
     public static EndpointDetails ToEndpointDetails(this MethodDeclarationSyntax method,
@@ -154,8 +152,8 @@ public static class Extensions
             .Select(a => (a.ArgumentList?.Arguments.FirstOrDefault()?.Expression, a.ArgumentList?.Arguments.LastOrDefault()?.Expression))
             .Where(tuple => tuple.Item1 is TypeOfExpressionSyntax && tuple.Item2 is ExpressionSyntax)
             .Where(tuple =>
-                (SuccessStatusCodeEnums.Any(code => tuple.Item2.ToString().Contains(code)) ||
-                 int.TryParse(tuple.Item2.ToString(), out var actualCode) &&
+                SuccessStatusCodeEnums.Any(code => tuple.Item2.ToString().Contains(code)) ||
+                (int.TryParse(tuple.Item2.ToString(), out var actualCode) &&
                  actualCode is >= 200 and <= 299))
             .Select(tuple => ((TypeOfExpressionSyntax)tuple.Item1).Type);
 
@@ -212,7 +210,7 @@ public static class Extensions
 
         var baseTypes = classDeclaration?.BaseList?.Types.ToList();
         result.BaseType = baseTypes?.Select(bt => bt.GetTypeDetails(classDeclarations))
-            .SingleOrDefault(bt => bt.PropertyTypes != null);
+            .SingleOrDefault(bt => bt.PropertyTypes is not null);
 
         if (!(node is GenericNameSyntax genericType) || !genericType.TypeArgumentList.Arguments.Any())
             return result;

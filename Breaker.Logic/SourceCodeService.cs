@@ -14,56 +14,48 @@ public static class SourceCodeService
         var allClasses = classes.Values.SelectMany(x => x).ToList();
 
         foreach (var (projectName, classDeclarations) in classes)
+        foreach (var classDeclaration in classDeclarations)
         {
-            foreach (var classDeclaration in classDeclarations)
-            {
-                var classAttributes = classDeclaration.AttributeLists.SelectMany(al => al.Attributes).ToList();
+            var classAttributes = classDeclaration.AttributeLists.SelectMany(al => al.Attributes).ToList();
 
-                var hasApiControllerAttribute = classAttributes.Any(a => a.Name.ToString() == "ApiController");
+            var hasApiControllerAttribute = classAttributes.Any(a => a.Name.ToString() == "ApiController");
 
-                var inheritsFromController = InheritsFromController(classDeclaration, allClasses);
+            var inheritsFromController = InheritsFromController(classDeclaration, allClasses);
 
-                if (!hasApiControllerAttribute && !inheritsFromController) continue;
+            if (!hasApiControllerAttribute && !inheritsFromController) continue;
 
-                var routeAttribute = classAttributes.SingleOrDefault(a => a.Name.ToString() == "Route");
+            var routeAttribute = classAttributes.SingleOrDefault(a => a.Name.ToString() == "Route");
 
-                var baseRoute = routeAttribute?.ArgumentList?.Arguments.Single();
+            var baseRoute = routeAttribute?.ArgumentList?.Arguments.Single();
 
-                var baseVersion = classDeclaration.AttributeLists.SelectMany(al => al.Attributes)
-                    .SingleOrDefault(a => a.Name.ToString() == "ApiVersion")?.ArgumentList?.Arguments.SingleOrDefault()?.Expression
-                    .GetFirstToken()
-                    .ValueText;
+            var baseVersion = classDeclaration.AttributeLists.SelectMany(al => al.Attributes)
+                .SingleOrDefault(a => a.Name.ToString() == "ApiVersion")?.ArgumentList?.Arguments.SingleOrDefault()?.Expression
+                .GetFirstToken()
+                .ValueText;
 
-                var authorizeAttribute = classAttributes.SingleOrDefault(a => a.Name.ToString() == "Authorize");
+            var authorizeAttribute = classAttributes.SingleOrDefault(a => a.Name.ToString() == "Authorize");
 
-                var partialClasses = classDeclarations
-                    .Where(c
+            var partialClasses = classDeclarations
+                .Where(c
                     => c.Modifiers.Any(m => m.ValueText == "partial") && c.Identifier.ValueText == classDeclaration.Identifier.ValueText)
-                    .ToList();
+                .ToList();
 
-                var classDeclarationsToSearch = new List<ClassDeclarationSyntax> { classDeclaration };
+            var classDeclarationsToSearch = new List<ClassDeclarationSyntax> { classDeclaration };
 
-                if (partialClasses.Any())
-                {
-                    classDeclarationsToSearch = partialClasses;
-                }
-                
-                // node.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings
+            if (partialClasses.Any()) classDeclarationsToSearch = partialClasses;
 
-                var usings = classDeclarationsToSearch
-                    .SelectMany(c => c.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings)
-                    .ToList();
+            var usings = classDeclarationsToSearch
+                .SelectMany(c => c.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings)
+                .ToList();
 
-                var publicMethods = classDeclarationsToSearch
-                    .SelectMany(c => c.Members.OfType<MethodDeclarationSyntax>()
+            var publicMethods = classDeclarationsToSearch
+                .SelectMany(c => c.Members.OfType<MethodDeclarationSyntax>()
                     .Where(m => m.Modifiers.Any(s => s.ValueText == "public")));
 
-                foreach (var publicMethod in publicMethods)
-                {
-                    yield return publicMethod.ToEndpointDetails(classDeclaration, projectName, baseVersion, baseRoute, authorizeAttribute, usings,
-                        allClasses);
-                }
-            }
+            foreach (var publicMethod in publicMethods)
+                yield return publicMethod.ToEndpointDetails(classDeclaration, projectName, baseVersion, baseRoute, authorizeAttribute,
+                    usings,
+                    allClasses);
         }
     }
 

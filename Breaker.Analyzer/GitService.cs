@@ -30,7 +30,7 @@ public static class GitService
     {
         var clonePath = Path.Combine(solutionDirectoryInfo.FullName, ".breaker");
         if (!Directory.Exists(clonePath)) Directory.CreateDirectory(clonePath);
-        
+
         if (!TryGetGitDirectory(solutionDirectoryInfo, out var gitDirectoryInfo)) return null;
         var gitConfigInfo = gitDirectoryInfo.GetFiles("config", SearchOption.TopDirectoryOnly).Single();
         var gitHeadInfo = gitDirectoryInfo.GetFiles("HEAD", SearchOption.TopDirectoryOnly).Single();
@@ -65,8 +65,7 @@ public static class GitService
         return result.Exists ? result : throw new Exception("cloned repo path does not exist");
     }
 
-    private static bool TryFetch(string clonedRepoPath, out string error)
-        => TryExecuteGitCommand("fetch", clonedRepoPath, out error);
+    private static bool TryFetch(string clonedRepoPath, out string error) => TryExecuteGitCommand("fetch", clonedRepoPath, out error);
 
     private static bool TryClone(string remoteUrl, string clonePath, out string error)
         => TryExecuteGitCommand($"clone {remoteUrl}", clonePath, out error);
@@ -74,8 +73,7 @@ public static class GitService
     private static bool TryCheckout(string gitRef, string clonedRepoPath, out string error)
         => TryExecuteGitCommand($"checkout {gitRef}", clonedRepoPath, out error);
 
-    private static bool TryPull(string clonedRepoPath, out string error)
-        => TryExecuteGitCommand("pull", clonedRepoPath, out error);
+    private static bool TryPull(string clonedRepoPath, out string error) => TryExecuteGitCommand("pull", clonedRepoPath, out error);
 
     private static bool TryExecuteGitCommand(string gitCommand, string workingDirectory, out string error)
     {

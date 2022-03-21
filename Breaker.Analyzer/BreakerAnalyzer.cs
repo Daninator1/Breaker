@@ -35,7 +35,7 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
     private static IReadOnlyCollection<EndpointDetails> expectedEndpoints = new List<EndpointDetails>();
     private static readonly Dictionary<string, IEnumerable<ClassDeclarationSyntax>> CurrentClassesDictionary = new();
     private static bool getOrUpdateSolution = true;
-    
+
     private static SimpleFileLogger logger;
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
@@ -89,13 +89,9 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
                 => x.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>());
 
             if (CurrentClassesDictionary.ContainsKey(context.Compilation.AssemblyName!))
-            {
                 CurrentClassesDictionary[context.Compilation.AssemblyName] = assemblyClasses;
-            }
             else
-            {
                 CurrentClassesDictionary.Add(context.Compilation.AssemblyName, assemblyClasses);
-            }
 
             var currentClasses = CurrentClassesDictionary.Values.SelectMany(x => x).ToList();
 

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Intrinsics.Arm;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -52,18 +51,14 @@ public static class Comparer
             => expectedEndpointsGroup.BaseRoute is not null && expectedEndpointsGroup.BaseRoute == ag.BaseRoute).ToList();
 
         if (possibleActualEndpointsGroups.Count == 0)
-        {
             possibleActualEndpointsGroups = actualEndpointsGroups.Where(ag
                 => expectedEndpointsGroup.Controller.Identifier.ValueText == ag.Controller.Identifier.ValueText).ToList();
-        }
 
         if (possibleActualEndpointsGroups.Count > 1)
-        {
             possibleActualEndpointsGroups =
                 possibleActualEndpointsGroups.Where(ag
                     => expectedEndpointsGroup.Namespace == ag.Namespace ||
                        expectedEndpointsGroup.ProjectName == ag.ProjectName).ToList();
-        }
 
         return possibleActualEndpointsGroups.Count == 1 ? possibleActualEndpointsGroups.First() : default;
     }
@@ -106,8 +101,10 @@ public static class Comparer
                         $"{expectedEndpoint.Class.Identifier.ValueText}: endpoint {expectedEndpoint.Identifier.ValueText} does no longer exist");
                 }
                 else
+                {
                     foreach (var endpointChange in CompareEndpoints(actualEndpoint, expectedEndpoint))
                         yield return endpointChange;
+                }
             }
         }
     }
@@ -184,9 +181,9 @@ public static class Comparer
         IReadOnlyCollection<TypeDetails> expectedTypes, Location fallbackLocation,
         string endpointName, bool ignoreTasks = false)
     {
-        if (expectedTypes != null)
+        if (expectedTypes is not null)
         {
-            if (actualTypes != null)
+            if (actualTypes is not null)
             {
                 if (ignoreTasks)
                 {
@@ -197,18 +194,18 @@ public static class Comparer
                 var additionalTypes = actualTypes
                     .Where(a
                         => expectedTypes.All(e
-                            => ((e.PropertyTypes is null && a.Type.Text != e.Type.Text) || a.IsNullable != e.IsNullable) ||
+                            => (e.PropertyTypes is null && a.Type.Text != e.Type.Text) || a.IsNullable != e.IsNullable ||
                                a.Identifier.ValueText != e.Identifier.ValueText))
                     .ToList();
 
                 foreach (var expectedType in expectedTypes)
                 {
                     var actualType = actualTypes.SingleOrDefault(p
-                        => ((p.PropertyTypes is not null && expectedType.PropertyTypes is not null ||
-                             p.Type.Text == expectedType.Type.Text) && p.IsNullable == expectedType.IsNullable) &&
+                        => ((p.PropertyTypes is not null && expectedType.PropertyTypes is not null) ||
+                            p.Type.Text == expectedType.Type.Text) && p.IsNullable == expectedType.IsNullable &&
                            p.Identifier.ValueText == expectedType.Identifier.ValueText);
 
-                    if (actualType != null)
+                    if (actualType is not null)
                     {
                         foreach (var typeChange in CompareTypes(actualType, expectedType,
                                      fallbackLocation, endpointName))
@@ -225,7 +222,6 @@ public static class Comparer
                             => t.Identifier.ValueText == expectedType.Identifier.ValueText).ToList();
 
                         if (potentialAdds.Any())
-                        {
                             foreach (var potentialAdd in potentialAdds.Where(p => !p.IsNullable))
                             {
                                 yield return (potentialAdd.Type.GetLocation(),
@@ -238,12 +234,9 @@ public static class Comparer
                                              potentialAdd.Identifier.GetLocation(), endpointName, potentialAdd.IsSimpleType))
                                     yield return attributeChange;
                             }
-                        }
                         else
-                        {
                             yield return (fallbackLocation,
                                 $"{endpointName}: {expectedType.Type.Text} {expectedType.Identifier.ValueText} was removed");
-                        }
                     }
                 }
 
@@ -258,21 +251,18 @@ public static class Comparer
                         $"{endpointName}: {expectedType.Type.Text} {expectedType.Identifier.ValueText} was removed");
             }
         }
-        else if (actualTypes != null)
+        else if (actualTypes is not null)
         {
             foreach (var actualType in actualTypes)
                 yield return (actualType.Type.GetLocation(),
                     $"{endpointName}: {actualType.Type.Text} {actualType.Identifier.ValueText} was added");
         }
 
-        static TypeDetails RemoveTask(TypeDetails @type)
+        static TypeDetails RemoveTask(TypeDetails type)
         {
-            if (@type.Type.Text == "Task" && @type.GenericTypes.Count() == 1)
-            {
-                return @type.GenericTypes.Single();
-            }
+            if (type.Type.Text == "Task" && type.GenericTypes.Count() == 1) return type.GenericTypes.Single();
 
-            return @type;
+            return type;
         }
     }
 
@@ -285,7 +275,7 @@ public static class Comparer
             ? CheckedAttributes.Where(c => c.name != "FromQuery").ToArray()
             : CheckedAttributes;
 
-        if (expectedAttributes != null)
+        if (expectedAttributes is not null)
         {
             var expectedAttributesFiltered = checkedAttributesFiltered
                 .Where(c => expectedAttributes.Any(e => e.Name.ToString() == c.name))
@@ -296,7 +286,7 @@ public static class Comparer
                 })
                 .ToList();
 
-            if (actualAttributes != null)
+            if (actualAttributes is not null)
             {
                 var actualAttributesFiltered = actualAttributes
                     .Where(a => checkedAttributesFiltered.Any(c => c.name == a.Name.ToString())).ToList();
@@ -325,7 +315,7 @@ public static class Comparer
                         $"{endpointName}: {expectedAttribute.expected.Name} attribute was removed");
             }
         }
-        else if (actualAttributes != null)
+        else if (actualAttributes is not null)
         {
             var actualAttributesFiltered = actualAttributes
                 .Where(a => checkedAttributesFiltered.Any(c => c.name == a.Name.ToString())).ToList();
