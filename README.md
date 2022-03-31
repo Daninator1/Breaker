@@ -12,7 +12,7 @@ The current stable release of Breaker can be found on [NuGet](https://www.nuget.
 Alternatively, you can build the source yourself and find the NuGet package in the output directory of `Breaker.NuGet`.
 After installation, the solution has to be reloaded for the changes to take effect.
 
-Breaker needs to be added to every project inside of the solution that you want to analyze. Only these projects will be taken into account for the change detection.
+Breaker needs to be added to every project inside of the solution that you want to analyze. Only these projects will be taken into account for the change detection (note the problem listed [here](#additional-information)).
 
 ### GitHub Action
 The GitHub Action can be installed via the [GitHub Marketplace](https://github.com/marketplace/actions/breaker-analyzer).
@@ -97,6 +97,14 @@ The action will also generate error messages and show them in the according plac
 For the NuGet package to work, the version needed for the comparison has to be cloned locally to the `.breaker` directory. This means that the time to initialize the analyzer will depend on the size of the repository. Consequently, this folder should be added to the `.gitignore` file.
 
 Log messages can be found inside the `.breaker/breaker.log` file.
+
+## Known problems
+
+- When analyzing multiple multiple projects, diagnostics can only be reporting for the currently analyzed project. Due to this limitation it can happen that after opening up or reloading the solution, the analyzer will fail to create all diagnostic warnings until further changes to the code are made. Rebuilding the solution will fix this. A solution for this problem would be greatly appreciated.
+
+- In certain scenarios where there are multiple controllers with the same name and route, once one gets moved to a new project, the analyzer can no longer find the correct one for the comparison.
+
+- If an action return type gets wrapped into `ActionResult`, the analyzer will falsely report this as a breaking change.
 
 ## Contributions
 
