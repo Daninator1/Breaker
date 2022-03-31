@@ -74,7 +74,9 @@ public static class Extensions
                 var compilationUsings = node.Ancestors().OfType<CompilationUnitSyntax>().Single().Usings
                     .Select(u => u.Name.ToString());
 
-                var usings = compilationUsings.Concat(classNamespace.Usings.Select(u => u.Name.ToString()));
+                var usings = compilationUsings
+                    .Concat(classNamespace.Usings.Select(u => u.Name.ToString()))
+                    .Select(s => s.Replace("global::", ""));
 
                 return possibleClassesAndNamespaces.Single(x => usings.Contains(x.possibleNamespace)).possibleNamespace;
             }

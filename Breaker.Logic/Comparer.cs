@@ -24,12 +24,12 @@ public static class Comparer
         ("FromServices", false)
     };
 
-    private static EndpointDetails GetActualEndpoint(EndpointDetails expectedEndpoint, IReadOnlyCollection<EndpointDetails> actualEndpoints)
+    private static EndpointDetails GetActualEndpoint(EndpointDetails expectedEndpoint, IReadOnlyCollection<EndpointDetails> actualEndpoints, IReadOnlyCollection<EndpointDetails> expectedEndpoints)
     {
         var possibleActualEndpoints = actualEndpoints.Where(a
             => IsOneHttpMethodRouteEqual(a.HttpMethodSpecificRoutes, expectedEndpoint.HttpMethodSpecificRoutes)).ToList();
 
-        return possibleActualEndpoints.Count > 1
+        return expectedEndpoints.Count > 1 && actualEndpoints.Count == 1 || possibleActualEndpoints.Count > 1
             ? possibleActualEndpoints.SingleOrDefault(a => a.Identifier.ValueText == expectedEndpoint.Identifier.ValueText)
             : possibleActualEndpoints.FirstOrDefault();
 
@@ -87,7 +87,8 @@ public static class Comparer
                 var actualEndpoint = actualEndpointsGroup is null
                     ? null
                     : GetActualEndpoint(expectedEndpoint,
-                        actualEndpointsGroup.Select(x => x).ToList());
+                        actualEndpointsGroup.Select(x => x).ToList(),
+                        expectedEndpointsGroup.Select(x => x).ToList());
 
                 if (actualEndpoint is null)
                 {
@@ -194,14 +195,14 @@ public static class Comparer
                 var additionalTypes = actualTypes
                     .Where(a
                         => expectedTypes.All(e
-                            => (e.PropertyTypes is null && a.Type.Text != e.Type.Text) || a.IsNullable != e.IsNullable ||
+                            => (e.PropertyTypes is null) && a.Type.Text != e.Type.Text || a.IsNullable != e.IsNullable ||
                                a.Identifier.ValueText != e.Identifier.ValueText))
                     .ToList();
 
                 foreach (var expectedType in expectedTypes)
                 {
                     var actualType = actualTypes.SingleOrDefault(p
-                        => ((p.PropertyTypes is not null && expectedType.PropertyTypes is not null) ||
+                        => ((expectedType.PropertyTypes is not null) ||
                             p.Type.Text == expectedType.Type.Text) && p.IsNullable == expectedType.IsNullable &&
                            p.Identifier.ValueText == expectedType.Identifier.ValueText);
 
