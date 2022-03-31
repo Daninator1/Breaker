@@ -47,14 +47,21 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
 
         // See https://github.com/dotnet/roslyn/blob/main/docs/analyzers/Analyzer%20Actions%20Semantics.md for more information
         context.RegisterSyntaxNodeAction(OnSyntaxNodeAction, SyntaxKind.ClassDeclaration);
+        context.RegisterCompilationAction(OnCompilationAction);
     }
 
     private static void OnSyntaxNodeAction(SyntaxNodeAnalysisContext context)
+        => Analyze(context.Options, context.Compilation, context.ReportDiagnostic);
+
+    private static void OnCompilationAction(CompilationAnalysisContext context)
+        => Analyze(context.Options, context.Compilation, context.ReportDiagnostic);
+
+    private static void Analyze(AnalyzerOptions options, Compilation compilation, Action<Diagnostic> reportDiagnostic)
     {
         try
         {
             var solutionDirectoryInfo =
-                new DirectoryInfo(Path.GetDirectoryName(context.Options.GetSolutionPath()) ?? string.Empty);
+                new DirectoryInfo(Path.GetDirectoryName(options.GetSolutionPath()) ?? string.Empty);
 
             logger = new SimpleFileLogger(Path.Combine(solutionDirectoryInfo.FullName, ".breaker", "breaker.log"));
 
@@ -85,27 +92,36 @@ public class BreakerAnalyzer : DiagnosticAnalyzer
                 getOrUpdateSolution = false;
             }
 
-            var assemblyClasses = context.Compilation.SyntaxTrees.SelectMany(x
+            var assemblyClasses = compilation.SyntaxTrees.SelectMany(x
                 => x.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>());
 
-            if (CurrentClassesDictionary.ContainsKey(context.Compilation.AssemblyName!))
-                CurrentClassesDictionary[context.Compilation.AssemblyName] = assemblyClasses;
+            if (CurrentClassesDictionary.ContainsKey(compilation.AssemblyName!))
+                CurrentClassesDictionary[compilation.AssemblyName] = assemblyClasses;
             else
-                CurrentClassesDictionary.Add(context.Compilation.AssemblyName, assemblyClasses);
+                CurrentClassesDictionary.Add(compilation.AssemblyName, assemblyClasses);
 
             var currentClasses = CurrentClassesDictionary.Values.SelectMany(x => x).ToList();
 
             var currentEndpoints =
                 SourceCodeService.GetEndpointDetails(new Dictionary<string, IReadOnlyCollection<ClassDeclarationSyntax>>
-                    { { context.Compilation.AssemblyName, currentClasses } });
+                    { { compilation.AssemblyName, currentClasses } });
 
             var endpointChanges = Comparer.CompareEndpoints(currentEndpoints.ToList(),
                 expectedEndpoints.Where(e => CurrentClassesDictionary.ContainsKey(e.ProjectName)).ToList());
-
+            
             foreach (var (location, message) in endpointChanges)
             {
-                var diagnostic = Diagnostic.Create(Rule, location, message);
-                context.ReportDiagnostic(diagnostic);
+                try
+                {
+                    var diagnostic = Diagnostic.Create(Rule, location, message);
+                    reportDiagnostic(diagnostic);
+                }
+                catch (Exception e)
+                {
+#if DEBUG
+                    logger.Log(e.Message);
+#endif
+                }
             }
         }
         catch (Exception e)
