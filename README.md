@@ -100,11 +100,17 @@ Log messages can be found inside the `.breaker/breaker.log` file.
 
 ## Known problems
 
+- It is not possible to analyze changes made in external Assemblies/NuGet packages. This is due to the fact that Breaker performs the comparison based on the generated syntax trees of the available source files.
+
+- Some breaking change warnings have unexpected locations where they are shown at in the IDE.
+
 - When analyzing multiple multiple projects, diagnostics can only be reporting for the currently analyzed project. Due to this limitation it can happen that after opening up or reloading the solution, the analyzer will fail to create all diagnostic warnings until further changes to the code are made. Rebuilding the solution will fix this. A solution for this problem would be greatly appreciated.
 
-- In certain scenarios where there are multiple controllers with the same name and route, once one gets moved to a new project, the analyzer can no longer find the correct one for the comparison.
-
 - If an action return type gets wrapped into `ActionResult`, the analyzer will falsely report this as a breaking change.
+
+- `[FromService]` injections get incorrectly detected as breaking changes.
+
+- In certain scenarios where there are multiple controllers with the same name and route, once one gets moved to a new project, the analyzer can no longer find the correct one for the comparison.
 
 ## Contributions
 
