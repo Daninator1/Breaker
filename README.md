@@ -104,6 +104,8 @@ Log messages can be found inside the `.breaker/breaker.log` file.
 
 - Some breaking change warnings have unexpected locations where they are shown at in the IDE.
 
+- Error objects (e. g. `ProblemDetails`) are not yet checked for breaking changes.
+
 - When analyzing multiple multiple projects, diagnostics can only be reporting for the currently analyzed project. Due to this limitation it can happen that after opening up or reloading the solution, the analyzer will fail to create all diagnostic warnings until further changes to the code are made. Rebuilding the solution will fix this. A solution for this problem would be greatly appreciated.
 
 - If an action return type gets wrapped into `ActionResult`, the analyzer will falsely report this as a breaking change.
