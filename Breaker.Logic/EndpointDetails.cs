@@ -11,7 +11,6 @@ public class EndpointDetails
     public SyntaxToken Identifier { get; set; }
     public ClassDeclarationSyntax Class { get; set; }
     public ClassDeclarationSyntax Controller { get; set; }
-    public string FullName => $"{this.Namespace}.{this.Class?.Identifier.ValueText}.{this.Identifier.ValueText}".Trim();
     public RouteDetails BaseRoute { get; set; }
     public IEnumerable<(AttributeSyntax, RouteDetails)> HttpMethodSpecificRoutes { get; set; }
     public AttributeSyntax BaseAuthorization { get; set; }
